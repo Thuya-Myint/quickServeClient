@@ -49,7 +49,7 @@ export default function NotificationClient() {
     return (
         <div className="p-4 max-w-lg mx-auto">
             <h1 className="text-xl font-bold mb-4">🧾 Notification Panel</h1>
-            <audio ref={audioRef} src="/notification.mp3" preload="auto" />
+           
             <div className="mb-4 space-y-2">
                 <input ref={tableRef} placeholder="Table No" className="border p-2 w-full" />
                 <input ref={messageRef} placeholder="Message" className="border p-2 w-full" />
