@@ -1,16 +1,23 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("https://quickserve-5mhc.onrender.com"); // Adjust if hosted remotely
+const socket = io("https://quickserve-5mhc.onrender.com", {
+    transports: ["websocket"],
+    withCredentials: true,
+});
 
 export default function NotificationClient() {
     const [notifications, setNotifications] = useState([]);
-    const tableRef = useRef("");
-    const messageRef = useRef("");
+    const [tableNo, setTableNo] = useState("");
+    const [message, setMessage] = useState("");
+    const tableRef = useRef(null);
+    const messageRef = useRef(null);
+    const audioRef = useRef(null);
+    const listRef = useRef(null);
 
     useEffect(() => {
         socket.on("connect", () => {
-            console.log("Connected:", socket.id);
+            console.log("✅ Connected:", socket.id);
         });
 
         socket.on("chat-history", (data) => {
@@ -19,12 +26,14 @@ export default function NotificationClient() {
 
         socket.on("new-notification", (data) => {
             setNotifications((prev) => [data, ...prev]);
-            // 🔊 Play sound on new notification
+
             if (audioRef.current) {
                 audioRef.current.play().catch((err) => {
-                    console.warn("Audio play prevented:", err);
+                    console.warn("🔇 Audio play prevented:", err);
                 });
             }
+
+            listRef.current?.scrollIntoView({ behavior: "smooth" });
         });
 
         return () => {
@@ -35,38 +44,98 @@ export default function NotificationClient() {
     }, []);
 
     const handleSend = () => {
-        const tableNo = tableRef.current.value.trim();
-        const message = messageRef.current.value.trim();
-
-        if (!tableNo || !message) return;
+        if (!tableNo.trim() || !message.trim()) {
+            alert("❌ Table number and message are required.");
+            return;
+        }
 
         socket.emit("send-notification", { tableNo, message });
 
-        tableRef.current.value = "";
-        messageRef.current.value = "";
+        setTableNo("");
+        setMessage("");
+        tableRef.current?.focus();
     };
 
-    return (
-        <div className="p-4 max-w-lg mx-auto">
-            <h1 className="text-xl font-bold mb-4">🧾 Notification Panel</h1>
-            <audio ref={audioRef} src="/notification.mp3" preload="auto" />
-            <div className="mb-4 space-y-2">
-                <input ref={tableRef} placeholder="Table No" className="border p-2 w-full" />
-                <input ref={messageRef} placeholder="Message" className="border p-2 w-full" />
-                <button onClick={handleSend} className="bg-blue-500 text-white px-4 py-2">
-                    Send Notification
-                </button>
-            </div>
+    const groupedByTable = notifications.reduce((acc, curr) => {
+        if (!acc[curr.tableNo]) acc[curr.tableNo] = [];
+        acc[curr.tableNo].push(curr);
+        return acc;
+    }, {});
 
-            {/* <ul className="space-y-2">
-                {notifications.map((n, index) => (
-                    <li key={index} className="border p-2 rounded">
-                        <strong>Table {n.tableNo}:</strong> {n.message}
-                        <br />
-                        <small>{new Date(n.timestamp).toLocaleString()}</small>
-                    </li>
+    return (
+        <div className="p-6 max-w-2xl mx-auto bg-gray-50 min-h-screen">
+            <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
+                🧾 Notification Panel
+            </h1>
+
+            <audio ref={audioRef} src="/notification.mp3" preload="auto" className="hidden" />
+
+            <form
+                className="grid grid-cols-1 gap-3 mb-6 bg-white p-4 rounded-xl shadow"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSend();
+                }}
+            >
+                <input
+                    value={tableNo}
+                    onChange={(e) => setTableNo(e.target.value)}
+                    ref={tableRef}
+                    placeholder="Table No"
+                    className="border-2 border-slate-200 p-2 outline-0 rounded w-full focus:outline-none focus:border-slate-400"
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            messageRef.current?.focus();
+                        }
+                    }}
+                />
+                <input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    ref={messageRef}
+                    placeholder="Message"
+                    className="border-2 border-slate-200 p-2 outline-0 rounded w-full focus:outline-none focus:border-slate-400"
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
+                />
+                <button
+                    type="submit"
+                    className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                >
+                    ➤ Send Notification
+                </button>
+            </form>
+
+            <div className="space-y-6">
+                {Object.entries(groupedByTable).map(([table, msgs]) => (
+                    <div key={table} className="bg-white p-4 rounded-xl shadow">
+                        <h2 className="text-lg font-semibold text-blue-600 mb-3">
+                            🪑 Table {table}
+                        </h2>
+                        <ul className="space-y-2 text-gray-700">
+                            {msgs.map((n, idx) => (
+                                <li
+                                    key={idx}
+                                    className="border p-3 rounded bg-gray-100"
+                                >
+                                    <div>{n.message}</div>
+                                    <small className="text-sm text-gray-500">
+                                        {n.timestamp
+                                            ? new Date(n.timestamp).toLocaleString()
+                                            : "No timestamp"}
+                                    </small>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 ))}
-            </ul> */}
+                <div ref={listRef}></div>
+            </div>
         </div>
     );
 }
