@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import notiSound from "/noti.mp3";
 
-const socket = io("https://quickserve-5mhc.onrender.com", {
+const socket = io("https://quickserve-t1f6.onrender.com", {
     transports: ["websocket"],
     withCredentials: true,
 });
