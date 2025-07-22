@@ -106,7 +106,7 @@ export default function NotificationClient() {
 
     return (
         <div
-            className="min-h-screen p-6 max-w-3xl mx-auto"
+            className="h-full p-6 max-w-3xl mx-auto"
             style={{
 
                 color: "white",
