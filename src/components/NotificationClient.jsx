@@ -108,7 +108,7 @@ export default function NotificationClient() {
         <div
             className="min-h-screen p-6 max-w-3xl mx-auto"
             style={{
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+
                 color: "white",
             }}
         >
